@@ -1,13 +1,12 @@
-use std::path::PathBuf;
-use structopt::StructOpt;
+use chrono::{DateTime, NaiveDateTime};
+use dtparse;
+use exif::{In, Reader, Tag};
 use glob::glob;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
-use exif::{In, Reader, Tag};
-use chrono::{NaiveDateTime, DateTime};
-use dtparse;
-use std::collections::HashMap;
-
+use std::path::PathBuf;
+use structopt::StructOpt;
 
 fn get_resolvers() -> Vec<fn(&PathBuf) -> Option<NaiveDateTime>> {
     return vec![read_exif_date, read_filename];
@@ -19,25 +18,37 @@ struct Opt {
     #[structopt(short, long)]
     debug: bool,
 
-    #[structopt(name="source", parse(from_os_str))]
+    #[structopt(name = "source", parse(from_os_str))]
     sources: Vec<PathBuf>,
 }
 
 fn parse_datetime(date_time: String) -> Option<NaiveDateTime> {
     let parser = dtparse::Parser::default();
-    return match parser.parse(&date_time, None, None, true, false, None, false, &HashMap::new()) {
+    return match parser.parse(
+        &date_time,
+        None,
+        None,
+        true,
+        false,
+        None,
+        false,
+        &HashMap::new(),
+    ) {
         Ok((dt, _, _)) => Some(dt),
-        Err(_) => None
+        Err(_) => None,
     };
 }
 
 fn read_exif_date(file_path: &PathBuf) -> Option<NaiveDateTime> {
     let file = File::open(file_path).expect("File not found");
-    let exif = Reader::new().read_from_container(&mut BufReader::new(&file)).ok()?;
+    let exif = Reader::new()
+        .read_from_container(&mut BufReader::new(&file))
+        .ok()?;
     let val = exif.get_field(Tag::DateTime, In::PRIMARY)?;
-    return DateTime::parse_from_rfc2822(&val.display_value().to_string()).map(|dt| dt.naive_local()).ok();
+    return DateTime::parse_from_rfc2822(&val.display_value().to_string())
+        .map(|dt| dt.naive_local())
+        .ok();
 }
-
 
 fn read_filename(file_path: &PathBuf) -> Option<NaiveDateTime> {
     let file_name = file_path.file_name()?;
@@ -60,7 +71,6 @@ fn process_file(file_path: PathBuf) {
     println!("{:?}", file_date);
 }
 
-
 fn process_directory(path: PathBuf) {
     let mut path = path.clone();
     path.push("*");
@@ -70,11 +80,10 @@ fn process_directory(path: PathBuf) {
                 println!("Processing {:?}", f);
                 process_file(f);
             }
-            Err(_) => ()
+            Err(_) => (),
         };
     }
 }
-
 
 fn main() {
     let opts = Opt::from_args();
