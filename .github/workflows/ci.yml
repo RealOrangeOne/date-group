@@ -28,13 +28,19 @@ jobs:
           command: build
           args: --release
 
-      - name: Check
+      - name: Run cargo clippy
         uses: actions-rs/cargo@v1
         with:
-          command: check
+          command: clippy
+        args: -- -D warnings
 
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: --all -- --check
+
+      - name: Check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
