@@ -1,5 +1,5 @@
 use chrono::{DateTime, NaiveDateTime};
-use dtparse;
+use dtparse::Parser;
 use exif::{In, Reader, Tag};
 use glob::glob;
 use std::collections::HashMap;
@@ -23,8 +23,7 @@ struct Opt {
 }
 
 fn parse_datetime(date_time: String) -> Option<NaiveDateTime> {
-    let parser = dtparse::Parser::default();
-    return match parser.parse(
+    return match Parser::default().parse(
         &date_time,
         None,
         None,
@@ -72,16 +71,11 @@ fn process_file(file_path: PathBuf) {
 }
 
 fn process_directory(path: PathBuf) {
-    let mut path = path.clone();
-    path.push("*");
-    for f in glob(path.to_str().expect("Failed to convert path")).expect("Failed to glob") {
-        match f {
-            Ok(f) => {
-                println!("Processing {:?}", f);
-                process_file(f);
-            }
-            Err(_) => (),
-        };
+    for f in glob(&format!("{}/*", path.display())).expect("Failed to glob") {
+        if let Ok(f) = f {
+            println!("Processing {:?}", f);
+            process_file(f);
+        }
     }
 }
 
