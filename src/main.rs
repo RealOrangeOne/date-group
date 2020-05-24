@@ -9,6 +9,10 @@ use dtparse;
 use std::collections::HashMap;
 
 
+fn get_resolvers() -> Vec<fn(&PathBuf) -> Option<NaiveDateTime>> {
+    return vec![read_exif_date, read_filename];
+}
+
 #[derive(StructOpt, Debug)]
 #[structopt()]
 struct Opt {
@@ -29,25 +33,31 @@ fn parse_datetime(date_time: String) -> Option<NaiveDateTime> {
 
 fn read_exif_date(file_path: &PathBuf) -> Option<NaiveDateTime> {
     let file = File::open(file_path).expect("File not found");
-    let exif = Reader::new().read_from_container(&mut BufReader::new(&file)).expect("Failed to read");
-    let val = exif.get_field(Tag::DateTime, In::PRIMARY).expect("Failed to get datetime");
+    let exif = Reader::new().read_from_container(&mut BufReader::new(&file)).ok()?;
+    let val = exif.get_field(Tag::DateTime, In::PRIMARY)?;
     return parse_datetime(val.display_value().to_string());
 }
 
-fn get_filename(file_path: &PathBuf) -> Option<String> {
-    let file_name = file_path.file_name()?;
-    let file_name_str = file_name.to_str()?;
-    return Some(String::from(file_name_str));
-}
 
 fn read_filename(file_path: &PathBuf) -> Option<NaiveDateTime> {
-    let filename = get_filename(file_path)?;
-    return parse_datetime(filename);
+    let file_name = file_path.file_name()?;
+    let file_name_str = file_name.to_str()?;
+    return parse_datetime(String::from(file_name_str));
+}
+
+fn get_date_for_file(file_path: &PathBuf) -> Option<NaiveDateTime> {
+    for resolver in get_resolvers().iter() {
+        let dt = resolver(file_path);
+        if dt.is_some() {
+            return dt;
+        }
+    }
+    return None;
 }
 
 fn process_file(file_path: PathBuf) {
-    let exif_date = read_filename(&file_path);
-    println!("{:?}", exif_date);
+    let file_date = get_date_for_file(&file_path);
+    println!("{:?}", file_date);
 }
 
 
