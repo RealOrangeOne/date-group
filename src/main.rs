@@ -4,7 +4,7 @@ use glob::glob;
 use std::fs::File;
 use std::io::BufReader;
 use exif::{In, Reader, Tag};
-use chrono::NaiveDateTime;
+use chrono::{NaiveDateTime, DateTime};
 use dtparse;
 use std::collections::HashMap;
 
@@ -35,7 +35,7 @@ fn read_exif_date(file_path: &PathBuf) -> Option<NaiveDateTime> {
     let file = File::open(file_path).expect("File not found");
     let exif = Reader::new().read_from_container(&mut BufReader::new(&file)).ok()?;
     let val = exif.get_field(Tag::DateTime, In::PRIMARY)?;
-    return parse_datetime(val.display_value().to_string());
+    return DateTime::parse_from_rfc2822(&val.display_value().to_string()).map(|dt| dt.naive_local()).ok();
 }
 
 
