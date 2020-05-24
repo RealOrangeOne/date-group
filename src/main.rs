@@ -6,6 +6,7 @@ use std::io::BufReader;
 use exif::{In, Reader, Tag};
 use chrono::NaiveDateTime;
 use dtparse;
+use std::collections::HashMap;
 
 
 #[derive(StructOpt, Debug)]
@@ -19,9 +20,9 @@ struct Opt {
 }
 
 fn parse_datetime(date_time: String) -> Option<NaiveDateTime> {
-    let parsed = dtparse::parse(&date_time);
-    return match parsed {
-        Ok((dt, _)) => Some(dt),
+    let parser = dtparse::Parser::default();
+    return match parser.parse(&date_time, None, None, true, false, None, false, &HashMap::new()) {
+        Ok((dt, _, _)) => Some(dt),
         Err(_) => None
     };
 }
@@ -33,9 +34,20 @@ fn read_exif_date(file_path: &PathBuf) -> Option<NaiveDateTime> {
     return parse_datetime(val.display_value().to_string());
 }
 
+fn get_filename(file_path: &PathBuf) -> Option<String> {
+    let file_name = file_path.file_name()?;
+    let file_name_str = file_name.to_str()?;
+    return Some(String::from(file_name_str));
+}
+
+fn read_filename(file_path: &PathBuf) -> Option<NaiveDateTime> {
+    let filename = get_filename(file_path)?;
+    return parse_datetime(filename);
+}
+
 fn process_file(file_path: PathBuf) {
-    let exif_date = read_exif_date(&file_path);
-    println!("{:?}: {:?}", file_path, exif_date);
+    let exif_date = read_filename(&file_path);
+    println!("{:?}", exif_date);
 }
 
 
