@@ -9,6 +9,11 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v2
 
+      - uses: actions/cache@v1
+        with:
+          path: $HOME/.cargo
+          key: cargo-${{ hashFiles('Cargo.lock') }}
+
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
