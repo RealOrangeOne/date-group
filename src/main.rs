@@ -3,7 +3,7 @@ use dtparse::Parser;
 use exif::{In, Reader, Tag};
 use glob::glob;
 use std::collections::HashMap;
-use std::fs::File;
+use std::fs::{create_dir_all, rename, File};
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
@@ -71,19 +71,21 @@ fn process_file(file_path: &PathBuf, root: &Path) -> Option<PathBuf> {
         let out_path = root
             .join(date.format("%Y/%B").to_string())
             .join(file_path.file_name()?);
+        if let Some(parent) = out_path.parent() {
+            create_dir_all(parent).expect("Failed to create directory");
+        }
+        rename(&file_path, &out_path).ok()?;
+        println!("{} -> {}", file_path.display(), out_path.display());
         return Some(out_path);
     }
+    println!("Failed to parse date from {}", file_path.display());
     return None;
 }
 
 fn process_directory(path: PathBuf) {
     for f in glob(&format!("{}/*", path.display())).expect("Failed to glob") {
         if let Ok(f) = f {
-            let out = process_file(&f, path.as_path());
-            match out {
-                Some(out_path) => println!("{} -> {}", f.display(), out_path.display()),
-                None => println!("Failed to parse date from {}", f.display()),
-            }
+            process_file(&f, path.as_path());
         }
     }
 }
