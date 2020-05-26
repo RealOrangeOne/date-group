@@ -5,7 +5,7 @@ use glob::glob;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
 fn get_resolvers() -> Vec<fn(&PathBuf) -> Option<NaiveDateTime>> {
@@ -65,16 +65,25 @@ fn get_date_for_file(file_path: &PathBuf) -> Option<NaiveDateTime> {
     return None;
 }
 
-fn process_file(file_path: PathBuf) {
-    let file_date = get_date_for_file(&file_path);
-    println!("{:?}", file_date);
+fn process_file(file_path: &PathBuf, root: &Path) -> Option<PathBuf> {
+    let file_date = get_date_for_file(file_path);
+    if let Some(date) = file_date {
+        let out_path = root
+            .join(date.format("%Y/%B").to_string())
+            .join(file_path.file_name()?);
+        return Some(out_path);
+    }
+    return None;
 }
 
 fn process_directory(path: PathBuf) {
     for f in glob(&format!("{}/*", path.display())).expect("Failed to glob") {
         if let Ok(f) = f {
-            println!("Processing {:?}", f);
-            process_file(f);
+            let out = process_file(&f, path.as_path());
+            match out {
+                Some(out_path) => println!("{} -> {}", f.display(), out_path.display()),
+                None => println!("Failed to parse date from {}", f.display()),
+            }
         }
     }
 }
