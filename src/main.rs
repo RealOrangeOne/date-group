@@ -2,7 +2,7 @@ use chrono::{DateTime, NaiveDateTime};
 use dtparse::Parser;
 use exif::{In, Reader, Tag};
 use glob::glob;
-use indicatif::{MultiProgress, ProgressBar};
+use indicatif::ProgressBar;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fs::{create_dir_all, rename, File};
@@ -109,16 +109,20 @@ fn list_directories(directories: Vec<PathBuf>) -> HashMap<PathBuf, Vec<PathBuf>>
 
 fn main() {
     let opts = Opt::from_args();
-    for (directory, files) in list_directories(opts.sources).iter() {
-        let pb = ProgressBar::new(files.len().try_into().expect("Files too large"));
+    let directory_map = list_directories(opts.sources);
+    let file_count = directory_map.values().flatten().count();
+    let pb = ProgressBar::new(file_count.try_into().expect("Too many files"));
+
+    for (directory, files) in directory_map.iter() {
         for file in files.into_iter() {
             sleep(100);
             let out_path = process_file(file, directory, opts.dry_run);
-            if let Some(out) = out_path {
-                pb.println(format!("{} -> {}", file.display(), out.display()));
+            match out_path {
+                Some(out) => pb.println(format!("{} -> {}", file.display(), out.display())),
+                None => pb.println(format!("Failed to parse date for {}", file.display())),
             }
             pb.inc(1);
         }
-        pb.finish();
     }
+    pb.finish();
 }
