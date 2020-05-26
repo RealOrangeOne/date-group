@@ -2,11 +2,19 @@ use chrono::{DateTime, NaiveDateTime};
 use dtparse::Parser;
 use exif::{In, Reader, Tag};
 use glob::glob;
+use indicatif::{MultiProgress, ProgressBar};
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::fs::{create_dir_all, rename, File};
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
+
+fn sleep(time: u64) {
+    use std::thread;
+    use std::time::Duration;
+    thread::sleep(Duration::from_millis(time));
+}
 
 fn get_resolvers() -> Vec<fn(&PathBuf) -> Option<NaiveDateTime>> {
     return vec![read_exif_date, read_filename];
@@ -72,10 +80,8 @@ fn process_file(file_path: &PathBuf, root: &Path, dry_run: bool) -> Option<PathB
             .join(date.format("%Y/%B").to_string())
             .join(file_path.file_name()?);
         if out_path.exists() {
-            println!("{} already exists.", out_path.display());
             return None;
         }
-        println!("{} -> {}", file_path.display(), out_path.display());
         if !dry_run {
             if let Some(parent) = out_path.parent() {
                 create_dir_all(parent).expect("Failed to create directory");
@@ -84,21 +90,35 @@ fn process_file(file_path: &PathBuf, root: &Path, dry_run: bool) -> Option<PathB
         }
         return Some(out_path);
     }
-    println!("Failed to parse date from {}", file_path.display());
     return None;
 }
 
-fn process_directory(path: PathBuf, dry_run: bool) {
-    for f in glob(&format!("{}/**/*.*", path.display())).expect("Failed to glob") {
-        if let Ok(f) = f {
-            process_file(&f, path.as_path(), dry_run);
-        }
+fn list_directories(directories: Vec<PathBuf>) -> HashMap<PathBuf, Vec<PathBuf>> {
+    let mut directory_map = HashMap::with_capacity(directories.len());
+    for directory in directories.into_iter() {
+        directory_map.insert(
+            directory.clone(),
+            glob(&format!("{}/**/*.*", directory.display()))
+                .map_or(Vec::with_capacity(0), |paths| {
+                    paths.filter_map(|r| r.ok()).collect()
+                }),
+        );
     }
+    return directory_map;
 }
 
 fn main() {
     let opts = Opt::from_args();
-    for path in opts.sources.into_iter() {
-        process_directory(path, opts.dry_run);
+    for (directory, files) in list_directories(opts.sources).iter() {
+        let pb = ProgressBar::new(files.len().try_into().expect("Files too large"));
+        for file in files.into_iter() {
+            sleep(100);
+            let out_path = process_file(file, directory, opts.dry_run);
+            if let Some(out) = out_path {
+                pb.println(format!("{} -> {}", file.display(), out.display()));
+            }
+            pb.inc(1);
+        }
+        pb.finish();
     }
 }
