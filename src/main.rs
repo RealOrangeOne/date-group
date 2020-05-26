@@ -16,7 +16,7 @@ fn get_resolvers() -> Vec<fn(&PathBuf) -> Option<NaiveDateTime>> {
 #[structopt()]
 struct Opt {
     #[structopt(short, long)]
-    debug: bool,
+    dry_run: bool,
 
     #[structopt(name = "source", parse(from_os_str))]
     sources: Vec<PathBuf>,
@@ -65,27 +65,33 @@ fn get_date_for_file(file_path: &PathBuf) -> Option<NaiveDateTime> {
     return None;
 }
 
-fn process_file(file_path: &PathBuf, root: &Path) -> Option<PathBuf> {
+fn process_file(file_path: &PathBuf, root: &Path, dry_run: bool) -> Option<PathBuf> {
     let file_date = get_date_for_file(file_path);
     if let Some(date) = file_date {
         let out_path = root
             .join(date.format("%Y/%B").to_string())
             .join(file_path.file_name()?);
-        if let Some(parent) = out_path.parent() {
-            create_dir_all(parent).expect("Failed to create directory");
+        if out_path.exists() {
+            println!("{} already exists.", out_path.display());
+            return None;
         }
-        rename(&file_path, &out_path).ok()?;
         println!("{} -> {}", file_path.display(), out_path.display());
+        if !dry_run {
+            if let Some(parent) = out_path.parent() {
+                create_dir_all(parent).expect("Failed to create directory");
+            }
+            rename(&file_path, &out_path).unwrap();
+        }
         return Some(out_path);
     }
     println!("Failed to parse date from {}", file_path.display());
     return None;
 }
 
-fn process_directory(path: PathBuf) {
-    for f in glob(&format!("{}/*", path.display())).expect("Failed to glob") {
+fn process_directory(path: PathBuf, dry_run: bool) {
+    for f in glob(&format!("{}/**/*.*", path.display())).expect("Failed to glob") {
         if let Ok(f) = f {
-            process_file(&f, path.as_path());
+            process_file(&f, path.as_path(), dry_run);
         }
     }
 }
@@ -93,6 +99,6 @@ fn process_directory(path: PathBuf) {
 fn main() {
     let opts = Opt::from_args();
     for path in opts.sources.into_iter() {
-        process_directory(path);
+        process_directory(path, opts.dry_run);
     }
 }
