@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use std::thread;
 use structopt::StructOpt;
 
-mod parsers;
+mod resolvers;
 mod utils;
 
 #[derive(StructOpt, Debug)]
@@ -29,7 +29,7 @@ fn process_file(
     dry_run: bool,
     format: &String,
 ) -> Option<PathBuf> {
-    let file_date = parsers::get_date_for_file(file_path);
+    let file_date = resolvers::get_date_for_file(file_path);
     if let Some(date) = file_date {
         let out_path = root
             .join(date.format(format).to_string())
