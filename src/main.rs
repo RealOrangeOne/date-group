@@ -16,15 +16,23 @@ struct Opt {
     #[structopt(short, long)]
     dry_run: bool,
 
+    #[structopt(long, default_value = "%Y/%B")]
+    format: String,
+
     #[structopt(name = "source", parse(from_os_str))]
     sources: Vec<PathBuf>,
 }
 
-fn process_file(file_path: &PathBuf, root: &Path, dry_run: bool) -> Option<PathBuf> {
+fn process_file(
+    file_path: &PathBuf,
+    root: &Path,
+    dry_run: bool,
+    format: &String,
+) -> Option<PathBuf> {
     let file_date = parsers::get_date_for_file(file_path);
     if let Some(date) = file_date {
         let out_path = root
-            .join(date.format("%Y/%B").to_string())
+            .join(date.format(format).to_string())
             .join(file_path.file_name()?);
         if out_path.exists() {
             return None;
@@ -76,7 +84,7 @@ fn main() {
     thread::spawn(move || {
         for (directory, files) in directory_map.iter() {
             for file in files.iter() {
-                let out_path = process_file(file, directory, opts.dry_run);
+                let out_path = process_file(file, directory, opts.dry_run, &opts.format);
                 match out_path {
                     Some(out) => {
                         main_progress.println(format!("{} -> {}", file.display(), out.display()));
