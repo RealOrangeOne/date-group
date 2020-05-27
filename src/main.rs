@@ -11,11 +11,6 @@ use std::path::{Path, PathBuf};
 use std::thread;
 use structopt::StructOpt;
 
-fn sleep(time: u64) {
-    use std::time::Duration;
-    thread::sleep(Duration::from_millis(time));
-}
-
 fn get_resolvers() -> Vec<fn(&PathBuf) -> Option<NaiveDateTime>> {
     return vec![read_exif_date, read_filename];
 }
@@ -93,9 +88,9 @@ fn process_file(file_path: &PathBuf, root: &Path, dry_run: bool) -> Option<PathB
     return None;
 }
 
-fn list_directories(directories: &Vec<PathBuf>) -> HashMap<PathBuf, Vec<PathBuf>> {
+fn list_directories(directories: &[PathBuf]) -> HashMap<PathBuf, Vec<PathBuf>> {
     let mut directory_map = HashMap::with_capacity(directories.len());
-    for directory in directories.into_iter() {
+    for directory in directories.iter() {
         directory_map.insert(
             directory.clone(),
             glob(&format!("{}/**/*.*", directory.display()))
@@ -128,7 +123,7 @@ fn main() {
 
     thread::spawn(move || {
         for (directory, files) in directory_map.iter() {
-            for file in files.into_iter() {
+            for file in files.iter() {
                 let out_path = process_file(file, directory, opts.dry_run);
                 match out_path {
                     Some(out) => {
