@@ -109,6 +109,10 @@ fn list_directories(directories: &Vec<PathBuf>) -> HashMap<PathBuf, Vec<PathBuf>
 
 fn main() {
     let opts = Opt::from_args();
+
+    let spinner = ProgressBar::new_spinner();
+    spinner.enable_steady_tick(100);
+    spinner.set_message("Searching for files...");
     let directory_map = list_directories(&opts.sources);
     let file_count = directory_map
         .values()
@@ -116,6 +120,7 @@ fn main() {
         .count()
         .try_into()
         .expect("Too many files");
+    spinner.finish();
 
     let multi_progress = MultiProgress::new();
     let main_progress = multi_progress.add(ProgressBar::new(file_count));
