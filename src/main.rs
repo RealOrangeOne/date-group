@@ -2,16 +2,16 @@ use chrono::{DateTime, NaiveDateTime};
 use dtparse::Parser;
 use exif::{In, Reader, Tag};
 use glob::glob;
-use indicatif::ProgressBar;
+use indicatif::{MultiProgress, ProgressBar};
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fs::{create_dir_all, rename, File};
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
+use std::thread;
 use structopt::StructOpt;
 
 fn sleep(time: u64) {
-    use std::thread;
     use std::time::Duration;
     thread::sleep(Duration::from_millis(time));
 }
@@ -93,7 +93,7 @@ fn process_file(file_path: &PathBuf, root: &Path, dry_run: bool) -> Option<PathB
     return None;
 }
 
-fn list_directories(directories: Vec<PathBuf>) -> HashMap<PathBuf, Vec<PathBuf>> {
+fn list_directories(directories: &Vec<PathBuf>) -> HashMap<PathBuf, Vec<PathBuf>> {
     let mut directory_map = HashMap::with_capacity(directories.len());
     for directory in directories.into_iter() {
         directory_map.insert(
@@ -109,20 +109,40 @@ fn list_directories(directories: Vec<PathBuf>) -> HashMap<PathBuf, Vec<PathBuf>>
 
 fn main() {
     let opts = Opt::from_args();
-    let directory_map = list_directories(opts.sources);
-    let file_count = directory_map.values().flatten().count();
-    let pb = ProgressBar::new(file_count.try_into().expect("Too many files"));
+    let directory_map = list_directories(&opts.sources);
+    let file_count = directory_map
+        .values()
+        .flatten()
+        .count()
+        .try_into()
+        .expect("Too many files");
 
-    for (directory, files) in directory_map.iter() {
-        for file in files.into_iter() {
-            sleep(100);
-            let out_path = process_file(file, directory, opts.dry_run);
-            match out_path {
-                Some(out) => pb.println(format!("{} -> {}", file.display(), out.display())),
-                None => pb.println(format!("Failed to parse date for {}", file.display())),
+    let multi_progress = MultiProgress::new();
+    let main_progress = multi_progress.add(ProgressBar::new(file_count));
+    let error_progress = multi_progress.add(ProgressBar::new(file_count));
+
+    thread::spawn(move || {
+        for (directory, files) in directory_map.iter() {
+            for file in files.into_iter() {
+                let out_path = process_file(file, directory, opts.dry_run);
+                match out_path {
+                    Some(out) => {
+                        main_progress.println(format!("{} -> {}", file.display(), out.display()));
+                    }
+                    None => {
+                        error_progress
+                            .println(format!("Failed to parse date for {}", file.display()));
+                        error_progress.inc(1);
+                    }
+                }
+                main_progress.inc(1);
             }
-            pb.inc(1);
         }
-    }
-    pb.finish();
+        main_progress.abandon();
+        if error_progress.position() > 0 {
+            error_progress.abandon();
+        }
+    });
+
+    multi_progress.join().expect("Failed to join");
 }
