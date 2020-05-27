@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use std::thread;
 use structopt::StructOpt;
 
+#[inline]
 fn get_resolvers() -> Vec<fn(&PathBuf) -> Option<NaiveDateTime>> {
     return vec![read_exif_date, read_filename];
 }
