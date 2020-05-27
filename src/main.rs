@@ -27,7 +27,7 @@ fn process_file(
     file_path: &PathBuf,
     root: &Path,
     dry_run: bool,
-    format: &String,
+    format: &str,
 ) -> Option<PathBuf> {
     let file_date = resolvers::get_date_for_file(file_path);
     if let Some(date) = file_date {
