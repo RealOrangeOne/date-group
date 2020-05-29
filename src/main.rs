@@ -122,6 +122,8 @@ fn main() {
     main_progress.abandon();
     if error_progress.position() > 0 {
         error_progress.abandon();
+    } else {
+        error_progress.finish_and_clear();
     }
 
     multi_progress_thread
