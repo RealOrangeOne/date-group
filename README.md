@@ -11,9 +11,11 @@ Dates are determined through multiple sources:
 
 ## Installation
 
-Clone the project, and use `cargo build --release` to create the binary at `target/release/date-group`.
+Downloads can be found under [releases](./releases). Alternatively, use the provided [Docker container](https://hub.docker.com/r/theorangeone/date-group).
 
-Alternatively, use the provided Dockerfile.
+### Build yourself
+
+Clone the project, and use `cargo build --release` to create the binary at `target/release/date-group`.
 
 ## Usage
 
