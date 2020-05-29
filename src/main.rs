@@ -1,9 +1,11 @@
+use console::style;
 use glob::glob;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fs::{create_dir_all, rename};
 use std::path::{Path, PathBuf};
+use std::process::exit;
 use std::thread;
 use structopt::StructOpt;
 
@@ -62,6 +64,11 @@ fn list_directories(directories: &[PathBuf]) -> HashMap<PathBuf, Vec<PathBuf>> {
 
 fn main() {
     let opts = Opt::from_args();
+
+    if opts.sources.is_empty() {
+        eprintln!("{}", style("At least 1 source must be provided.").red());
+        exit(1);
+    }
 
     let spinner = ProgressBar::new_spinner();
 
