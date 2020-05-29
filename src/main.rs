@@ -1,5 +1,5 @@
 use glob::glob;
-use indicatif::{MultiProgress, ProgressBar};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fs::{create_dir_all, rename};
@@ -23,12 +23,7 @@ struct Opt {
     sources: Vec<PathBuf>,
 }
 
-fn process_file(
-    file_path: &PathBuf,
-    root: &Path,
-    dry_run: bool,
-    format: &str,
-) -> Option<PathBuf> {
+fn process_file(file_path: &PathBuf, root: &Path, dry_run: bool, format: &str) -> Option<PathBuf> {
     let file_date = resolvers::get_date_for_file(file_path);
     if let Some(date) = file_date {
         let out_path = root
@@ -81,28 +76,46 @@ fn main() {
     let main_progress = multi_progress.add(ProgressBar::new(file_count));
     let error_progress = multi_progress.add(ProgressBar::new(file_count));
 
-    thread::spawn(move || {
-        for (directory, files) in directory_map.iter() {
-            for file in files.iter() {
-                let out_path = process_file(file, directory, opts.dry_run, &opts.format);
-                match out_path {
-                    Some(out) => {
-                        main_progress.println(format!("{} -> {}", file.display(), out.display()));
-                    }
-                    None => {
-                        error_progress
-                            .println(format!("Failed to parse date for {}", file.display()));
-                        error_progress.inc(1);
-                    }
-                }
-                main_progress.inc(1);
-            }
-        }
-        main_progress.abandon();
-        if error_progress.position() > 0 {
-            error_progress.abandon();
-        }
+    main_progress
+        .set_style(ProgressStyle::default_bar().template("{wide_bar:.cyan/blue} {pos}/{len}"));
+    error_progress
+        .set_style(ProgressStyle::default_bar().template("Errors: {wide_bar:.red} {pos}/{len}"));
+
+    let mut error_files = Vec::new();
+
+    let multi_progress_thread = thread::spawn(move || {
+        multi_progress.join().expect("Failed to join");
     });
 
-    multi_progress.join().expect("Failed to join");
+    for (directory, files) in directory_map.iter() {
+        for file in files.iter() {
+            let out_path = process_file(file, directory, opts.dry_run, &opts.format);
+            match out_path {
+                Some(out) => {
+                    main_progress.println(format!("{} -> {}", file.display(), out.display()));
+                }
+                None => {
+                    error_progress.println(format!("Failed to parse date for {}", file.display()));
+                    error_progress.inc(1);
+                    error_files.push(file.to_path_buf());
+                }
+            }
+            main_progress.inc(1);
+        }
+    }
+    main_progress.abandon();
+    if error_progress.position() > 0 {
+        error_progress.abandon();
+    }
+
+    multi_progress_thread
+        .join()
+        .expect("Multi progress thread panicked");
+
+    if !error_files.is_empty() {
+        println!("{} files failed:", error_files.len());
+        for error_file in error_files.iter() {
+            println!("{}", error_file.display());
+        }
+    }
 }
