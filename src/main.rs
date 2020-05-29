@@ -15,10 +15,10 @@ mod utils;
 #[derive(StructOpt, Debug)]
 #[structopt()]
 struct Opt {
-    #[structopt(short, long)]
+    #[structopt(short, long, help = "Don't move files")]
     dry_run: bool,
 
-    #[structopt(long, default_value = "%Y/%B")]
+    #[structopt(long, default_value = "%Y/%B", help = "Format to group files by")]
     format: String,
 
     #[structopt(name = "source", parse(from_os_str))]
