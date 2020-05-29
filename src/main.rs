@@ -65,6 +65,15 @@ fn list_directories(directories: &[PathBuf]) -> HashMap<PathBuf, Vec<PathBuf>> {
     return directory_map;
 }
 
+#[inline]
+fn abandon_or_clear(pb: ProgressBar) {
+    if pb.position() > 0 {
+        pb.abandon();
+    } else {
+        pb.finish_and_clear();
+    }
+}
+
 fn main() {
     let opts = Opt::from_args();
 
@@ -92,10 +101,12 @@ fn main() {
 
     let multi_progress = MultiProgress::new();
     let main_progress = multi_progress.add(ProgressBar::new(file_count));
+    let in_place_progress = multi_progress.add(ProgressBar::new(file_count));
     let error_progress = multi_progress.add(ProgressBar::new(file_count));
 
-    main_progress
-        .set_style(ProgressStyle::default_bar().template("{wide_bar:.cyan/blue} {pos}/{len}"));
+    main_progress.set_style(ProgressStyle::default_bar().template("{wide_bar:.green} {pos}/{len}"));
+    in_place_progress
+        .set_style(ProgressStyle::default_bar().template("In place: {wide_bar:.cyan} {pos}/{len}"));
     error_progress
         .set_style(ProgressStyle::default_bar().template("Errors: {wide_bar:.red} {pos}/{len}"));
 
@@ -108,16 +119,21 @@ fn main() {
             let out_path = process_file(file, directory, opts.dry_run, &opts.format);
             match out_path {
                 Some(out) => {
-                    if opts.verbose {
-                        if out == file.to_path_buf() {
-                            main_progress.println(format!("{} already in place", out.display()));
-                        } else {
+                    if out == file.to_path_buf() {
+                        if opts.verbose {
                             main_progress.println(
-                                style(format!("{} -> {}", file.display(), out.display()))
-                                    .green()
+                                style(format!("{} already in place", out.display()))
+                                    .cyan()
                                     .to_string(),
                             );
                         }
+                        in_place_progress.inc(1);
+                    } else if opts.verbose {
+                        main_progress.println(
+                            style(format!("{} -> {}", file.display(), out.display()))
+                                .green()
+                                .to_string(),
+                        );
                     }
                 }
                 None => {
@@ -134,12 +150,10 @@ fn main() {
             main_progress.inc(1);
         }
     }
+
     main_progress.abandon();
-    if error_progress.position() > 0 {
-        error_progress.abandon();
-    } else {
-        error_progress.finish_and_clear();
-    }
+    abandon_or_clear(error_progress);
+    abandon_or_clear(in_place_progress);
 
     multi_progress_thread
         .join()
