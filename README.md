@@ -11,7 +11,7 @@ Dates are determined through multiple sources:
 
 ## Installation
 
-Downloads can be found under [releases](./releases). Alternatively, use the provided [Docker container](https://hub.docker.com/r/theorangeone/date-group).
+Downloads can be found under [releases](releases). Alternatively, use the provided [Docker container](https://hub.docker.com/r/theorangeone/date-group).
 
 ### Build yourself
 
