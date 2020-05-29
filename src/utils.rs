@@ -10,7 +10,7 @@ pub fn parse_datetime(date_time: String) -> Option<NaiveDateTime> {
         true,
         false,
         None,
-        false,
+        true,
         &HashMap::new(),
     ) {
         Ok((dt, _, _)) => Some(dt),
