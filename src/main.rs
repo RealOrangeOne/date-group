@@ -34,6 +34,9 @@ fn process_file(file_path: &PathBuf, root: &Path, dry_run: bool, format: &str) -
         let out_path = root
             .join(date.format(format).to_string())
             .join(file_path.file_name()?);
+        if out_path == file_path.to_path_buf() {
+            return Some(out_path);
+        }
         if out_path.exists() {
             return None;
         }
@@ -108,7 +111,15 @@ fn main() {
             match out_path {
                 Some(out) => {
                     if opts.verbose {
-                        main_progress.println(format!("{} -> {}", file.display(), out.display()));
+                        if out == file.to_path_buf() {
+                            main_progress.println(format!("{} already in place", out.display()));
+                        } else {
+                            main_progress.println(format!(
+                                "{} -> {}",
+                                file.display(),
+                                out.display()
+                            ));
+                        }
                     }
                 }
                 None => {
