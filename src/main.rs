@@ -139,7 +139,7 @@ fn main() {
                 None => {
                     if opts.verbose {
                         error_progress.println(
-                            style(format!("{} failed to parse", file.display()))
+                            style(format!("Failed to get date for {}", file.display()))
                                 .red()
                                 .to_string(),
                         );
