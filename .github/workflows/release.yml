@@ -1,12 +1,21 @@
 name: Release
 
-on: [push]
+on: [release]
 
 jobs:
   release:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: date-group
+            asset_name: date-group-linux-amd64
+          - os: windows-latest
+            artifact_name: date-group.exe
+            asset_name: date-group-windows-amd64
+          - os: macos-latest
+            artifact_name: date-group
+            asset_name: date-group-macos-amd64
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout sources
@@ -24,6 +33,21 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v1-release
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/release/${{ matrix.artifact_name }}
+          asset_name: ${{ matrix.asset_name }}
+          tag: ${{ github.ref }}
+          overwrite: true
+
       - name: Install cargo-deb
         uses: actions-rs/install@v0.1
         if: matrix.os == 'ubuntu-latest'
@@ -31,14 +55,18 @@ jobs:
           crate: cargo-deb
           use-tool-cache: true
 
-      - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release
-
       - name: Build deb
         uses: actions-rs/cargo@v1
         if: matrix.os == 'ubuntu-latest'
         with:
           command: deb
+
+      - name: Upload .deb to release
+        uses: svenstaro/upload-release-action@v1-release
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/debian/*.deb
+          tag: ${{ github.ref }}
+          file_glob: true
+          overwrite: true
