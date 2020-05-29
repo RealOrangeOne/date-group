@@ -85,6 +85,8 @@ fn main() {
         .try_into()
         .expect("Too many files");
 
+    spinner.finish();
+
     let multi_progress = MultiProgress::new();
     let main_progress = multi_progress.add(ProgressBar::new(file_count));
     let error_progress = multi_progress.add(ProgressBar::new(file_count));
