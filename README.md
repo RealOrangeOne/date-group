@@ -8,3 +8,19 @@ Dates are determined through multiple sources:
 
 - EXIF metadata
 - Date in filename
+
+## Installation
+
+Clone the project, and use `cargo build --release` to create the binary at `target/release/date-group`.
+
+Alternatively, use the provided Dockerfile.
+
+## Usage
+
+The only required argument is the source. The source is 1 or more directory of images you want to group. Grouping will be done relative to this source.
+
+`--verbose` can be used to see the list of files moved, and the ones which were unable to be parsed.
+
+`--dry-run` can be used to perform all the parsing operations, but without moving files.
+
+`--format` will let you specify how files will be grouped. By default `%Y/%B` (eg `2020/May`).
