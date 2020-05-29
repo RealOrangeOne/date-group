@@ -16,15 +16,9 @@ pub fn parse_datetime(date_time: String) -> Option<NaiveDateTime> {
             true,
             &HashMap::new(),
         );
-    });
-    if parse_match.is_err() {
-        eprintln!(
-            "This panic was caused by attempting to parse '{}'.\n",
-            date_time
-        );
-        return None;
-    }
-    return match parse_match.ok()? {
+    })
+    .ok()?;
+    return match parse_match {
         Ok((dt, _, _)) => Some(dt),
         Err(_) => None,
     };

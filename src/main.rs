@@ -103,8 +103,6 @@ fn main() {
         multi_progress.join().expect("Failed to join");
     });
 
-    let mut error_files = Vec::new();
-
     for (directory, files) in directory_map.iter() {
         for file in files.iter() {
             let out_path = process_file(file, directory, opts.dry_run, &opts.format);
@@ -114,17 +112,23 @@ fn main() {
                         if out == file.to_path_buf() {
                             main_progress.println(format!("{} already in place", out.display()));
                         } else {
-                            main_progress.println(format!(
-                                "{} -> {}",
-                                file.display(),
-                                out.display()
-                            ));
+                            main_progress.println(
+                                style(format!("{} -> {}", file.display(), out.display()))
+                                    .green()
+                                    .to_string(),
+                            );
                         }
                     }
                 }
                 None => {
+                    if opts.verbose {
+                        error_progress.println(
+                            style(format!("{} failed to parse", file.display()))
+                                .red()
+                                .to_string(),
+                        );
+                    }
                     error_progress.inc(1);
-                    error_files.push(file.to_path_buf());
                 }
             }
             main_progress.inc(1);
@@ -140,11 +144,4 @@ fn main() {
     multi_progress_thread
         .join()
         .expect("Multi progress thread panicked");
-
-    if opts.verbose && !error_files.is_empty() {
-        println!("{} files failed:", error_files.len());
-        for error_file in error_files.iter() {
-            println!("{}", error_file.display());
-        }
-    }
 }
