@@ -110,10 +110,6 @@ fn main() {
                     }
                 }
                 None => {
-                    if opts.verbose {
-                        error_progress
-                            .println(format!("Failed to parse date for {}", file.display()));
-                    }
                     error_progress.inc(1);
                     error_files.push(file.to_path_buf());
                 }
