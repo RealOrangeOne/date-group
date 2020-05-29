@@ -21,6 +21,9 @@ struct Opt {
 
     #[structopt(name = "source", parse(from_os_str))]
     sources: Vec<PathBuf>,
+
+    #[structopt(short, long)]
+    verbose: bool,
 }
 
 fn process_file(file_path: &PathBuf, root: &Path, dry_run: bool, format: &str) -> Option<PathBuf> {
@@ -61,8 +64,12 @@ fn main() {
     let opts = Opt::from_args();
 
     let spinner = ProgressBar::new_spinner();
-    spinner.enable_steady_tick(100);
-    spinner.set_message("Searching for files...");
+
+    if opts.verbose {
+        spinner.enable_steady_tick(100);
+        spinner.set_message("Searching for files...");
+    }
+
     let directory_map = list_directories(&opts.sources);
     let file_count = directory_map
         .values()
@@ -70,7 +77,6 @@ fn main() {
         .count()
         .try_into()
         .expect("Too many files");
-    spinner.finish();
 
     let multi_progress = MultiProgress::new();
     let main_progress = multi_progress.add(ProgressBar::new(file_count));
@@ -81,21 +87,26 @@ fn main() {
     error_progress
         .set_style(ProgressStyle::default_bar().template("Errors: {wide_bar:.red} {pos}/{len}"));
 
-    let mut error_files = Vec::new();
-
     let multi_progress_thread = thread::spawn(move || {
         multi_progress.join().expect("Failed to join");
     });
+
+    let mut error_files = Vec::new();
 
     for (directory, files) in directory_map.iter() {
         for file in files.iter() {
             let out_path = process_file(file, directory, opts.dry_run, &opts.format);
             match out_path {
                 Some(out) => {
-                    main_progress.println(format!("{} -> {}", file.display(), out.display()));
+                    if opts.verbose {
+                        main_progress.println(format!("{} -> {}", file.display(), out.display()));
+                    }
                 }
                 None => {
-                    error_progress.println(format!("Failed to parse date for {}", file.display()));
+                    if opts.verbose {
+                        error_progress
+                            .println(format!("Failed to parse date for {}", file.display()));
+                    }
                     error_progress.inc(1);
                     error_files.push(file.to_path_buf());
                 }
@@ -112,7 +123,7 @@ fn main() {
         .join()
         .expect("Multi progress thread panicked");
 
-    if !error_files.is_empty() {
+    if opts.verbose && !error_files.is_empty() {
         println!("{} files failed:", error_files.len());
         for error_file in error_files.iter() {
             println!("{}", error_file.display());
