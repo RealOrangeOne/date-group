@@ -1,13 +1,14 @@
 use crate::utils::parse_datetime;
 use chrono::{DateTime, NaiveDateTime};
 use exif::{In, Reader, Tag};
+use lazy_static::lazy_static;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
 
-#[inline]
-fn get_resolvers() -> Vec<fn(&PathBuf) -> Option<NaiveDateTime>> {
-    return vec![read_exif_date, read_filename];
+lazy_static! {
+    static ref RESOLVERS: Vec<fn(&PathBuf) -> Option<NaiveDateTime>> =
+        vec![read_exif_date, read_filename];
 }
 
 fn read_filename(file_path: &PathBuf) -> Option<NaiveDateTime> {
@@ -28,7 +29,7 @@ fn read_exif_date(file_path: &PathBuf) -> Option<NaiveDateTime> {
 }
 
 pub fn get_date_for_file(file_path: &PathBuf) -> Option<NaiveDateTime> {
-    for resolver in get_resolvers().iter() {
+    for resolver in RESOLVERS.iter() {
         let dt = resolver(file_path);
         if dt.is_some() {
             return dt;
