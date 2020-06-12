@@ -3,7 +3,7 @@ use glob::glob;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::collections::HashMap;
 use std::convert::TryInto;
-use std::fs::{create_dir_all, rename};
+use std::fs::{create_dir_all, remove_file, rename};
 use std::path::{Path, PathBuf};
 use std::process::exit;
 use std::thread;
@@ -26,6 +26,12 @@ struct Opt {
 
     #[structopt(short, long)]
     verbose: bool,
+
+    #[structopt(
+        long,
+        help = "If destination already exists, delete the redundant source"
+    )]
+    delete_redundant_source: bool,
 }
 
 fn process_file(file_path: &PathBuf, root: &Path, opts: &Opt) -> Option<PathBuf> {
@@ -38,6 +44,9 @@ fn process_file(file_path: &PathBuf, root: &Path, opts: &Opt) -> Option<PathBuf>
             return Some(out_path);
         }
         if out_path.exists() {
+            if !opts.dry_run && opts.delete_redundant_source {
+                remove_file(file_path).expect("Failed to delete redundant source");
+            }
             return None;
         }
         if !opts.dry_run {
