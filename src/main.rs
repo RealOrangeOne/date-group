@@ -28,11 +28,11 @@ struct Opt {
     verbose: bool,
 }
 
-fn process_file(file_path: &PathBuf, root: &Path, dry_run: bool, format: &str) -> Option<PathBuf> {
+fn process_file(file_path: &PathBuf, root: &Path, opts: &Opt) -> Option<PathBuf> {
     let file_date = resolvers::get_date_for_file(file_path);
     if let Some(date) = file_date {
         let out_path = root
-            .join(date.format(format).to_string())
+            .join(date.format(&opts.format).to_string())
             .join(file_path.file_name()?);
         if out_path == file_path.to_path_buf() {
             return Some(out_path);
@@ -40,7 +40,7 @@ fn process_file(file_path: &PathBuf, root: &Path, dry_run: bool, format: &str) -
         if out_path.exists() {
             return None;
         }
-        if !dry_run {
+        if !opts.dry_run {
             if let Some(parent) = out_path.parent() {
                 create_dir_all(parent).expect("Failed to create directory");
             }
@@ -116,7 +116,7 @@ fn main() {
 
     for (directory, files) in directory_map.iter() {
         for file in files.iter() {
-            let out_path = process_file(file, directory, opts.dry_run, &opts.format);
+            let out_path = process_file(file, directory, &opts);
             match out_path {
                 Some(out) => {
                     if out == file.to_path_buf() {
