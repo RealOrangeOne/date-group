@@ -26,3 +26,5 @@ The only required argument is the source. The source is 1 or more directory of i
 `--dry-run` can be used to perform all the parsing operations, but without moving files.
 
 `--format` will let you specify how files will be grouped. By default `%Y/%B` (eg `2020/May`).
+
+If the destination a file is meant to be moved to already exists, `--delete-redundant-source` can be used to delete the source to ensure things remain clean.
