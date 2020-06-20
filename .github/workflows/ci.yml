@@ -46,6 +46,11 @@ jobs:
           command: build
           args: --release
 
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
         with:

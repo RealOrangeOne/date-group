@@ -31,3 +31,16 @@ fn validate_datetime(date_time: NaiveDateTime) -> Option<NaiveDateTime> {
     }
     return Some(date_time);
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    #[test]
+    fn test_is_between() {
+        assert!(is_between(2, 1, 3));
+        assert!(is_between(200, 100, 300));
+        assert!(is_between(100, 100, 100));
+        assert!(is_between(-10, -100, 100));
+    }
+}
