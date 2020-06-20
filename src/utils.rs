@@ -1,11 +1,11 @@
 use chrono::{Datelike, Local, NaiveDateTime};
 use dtparse::Parser;
-use std::cmp::{Ord, Ordering};
+use std::cmp::Ord;
 use std::collections::HashMap;
 
 #[inline]
 fn is_between<T: Ord>(i: T, min: T, max: T) -> bool {
-    return i.cmp(&min) != Ordering::Less && i.cmp(&max) != Ordering::Greater;
+    return i >= min && i <= max;
 }
 
 pub fn parse_datetime(date_time: String) -> Option<NaiveDateTime> {
