@@ -1,9 +1,14 @@
-use chrono::NaiveDateTime;
+use chrono::{Datelike, Local, NaiveDateTime};
 use dtparse::Parser;
+use std::cmp::{Ord, Ordering};
 use std::collections::HashMap;
 
+#[inline]
+fn is_between<T: Ord>(i: T, min: T, max: T) -> bool {
+    return i.cmp(&min) != Ordering::Less && i.cmp(&max) != Ordering::Greater;
+}
+
 pub fn parse_datetime(date_time: String) -> Option<NaiveDateTime> {
-    // HACK: Date parsing is hard!
     return Parser::default()
         .parse(
             &date_time,
@@ -16,5 +21,13 @@ pub fn parse_datetime(date_time: String) -> Option<NaiveDateTime> {
             &HashMap::new(),
         )
         .map(|(dt, _, _)| dt)
-        .ok();
+        .ok()
+        .and_then(validate_datetime);
+}
+
+fn validate_datetime(date_time: NaiveDateTime) -> Option<NaiveDateTime> {
+    if !is_between(date_time.year(), 1960, Local::today().year()) {
+        return None;
+    }
+    return Some(date_time);
 }
