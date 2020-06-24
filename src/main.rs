@@ -113,7 +113,9 @@ fn main() {
     let in_place_progress = multi_progress.add(ProgressBar::new(file_count));
     let error_progress = multi_progress.add(ProgressBar::new(file_count));
 
-    main_progress.set_style(ProgressStyle::default_bar().template("{wide_bar:.green} {pos}/{len}"));
+    main_progress.set_style(
+        ProgressStyle::default_bar().template("{wide_bar:.green} {pos}/{len} ({per_sec})"),
+    );
     in_place_progress
         .set_style(ProgressStyle::default_bar().template("In place: {wide_bar:.cyan} {pos}/{len}"));
     error_progress
