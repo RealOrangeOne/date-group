@@ -26,7 +26,7 @@ pub fn parse_datetime(date_time: String) -> Option<NaiveDateTime> {
 }
 
 fn validate_datetime(date_time: NaiveDateTime) -> Option<NaiveDateTime> {
-    if !is_between(date_time.year(), 1960, Local::today().year()) {
+    if !is_between(date_time.year(), 1900, Local::today().year()) {
         return None;
     }
     return Some(date_time);
