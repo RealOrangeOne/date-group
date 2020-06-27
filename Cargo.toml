@@ -9,7 +9,7 @@ readme = "README.md"
 license-file = "LICENSE"
 
 [dependencies]
-structopt = "0.3.14"
+structopt = "0.3.15"
 glob = "0.3.0"
 kamadak-exif = "0.5.1"
 dtparse = "1.1.0"
