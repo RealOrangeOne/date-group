@@ -38,7 +38,14 @@ mod tests {
     use super::*;
     use chrono::NaiveDate;
 
-    fn make_datetime(year: i32, month: u32, day: u32, hour: u32, minute: u32, second: u32) -> NaiveDateTime {
+    fn make_datetime(
+        year: i32,
+        month: u32,
+        day: u32,
+        hour: u32,
+        minute: u32,
+        second: u32,
+    ) -> NaiveDateTime {
         return NaiveDate::from_ymd(year, month, day).and_hms(hour, minute, second);
     }
 
