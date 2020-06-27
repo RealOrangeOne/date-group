@@ -1,5 +1,4 @@
 use console::style;
-use glob::glob;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -8,6 +7,7 @@ use std::path::{Path, PathBuf};
 use std::process::exit;
 use std::thread;
 use structopt::StructOpt;
+use walkdir::{DirEntry, WalkDir};
 
 mod resolvers;
 mod utils;
@@ -65,10 +65,12 @@ fn list_directories(directories: &[PathBuf]) -> HashMap<PathBuf, Vec<PathBuf>> {
     for directory in directories.iter() {
         directory_map.insert(
             directory.clone(),
-            glob(&format!("{}/**/*.*", directory.display()))
-                .map_or(Vec::with_capacity(0), |paths| {
-                    paths.filter_map(|r| r.ok()).collect()
-                }),
+            WalkDir::new(directory)
+                .into_iter()
+                .filter_map(Result::ok)
+                .map(DirEntry::into_path)
+                .filter(|p| p.is_file())
+                .collect(),
         );
     }
     return directory_map;
