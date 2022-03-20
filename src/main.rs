@@ -34,7 +34,7 @@ struct Opt {
     delete_redundant_source: bool,
 }
 
-fn process_file(file_path: &PathBuf, root: &Path, opts: &Opt) -> Option<PathBuf> {
+fn process_file(file_path: &Path, root: &Path, opts: &Opt) -> Option<PathBuf> {
     let file_date = resolvers::get_date_for_file(file_path);
     if let Some(date) = file_date {
         let out_path = root
